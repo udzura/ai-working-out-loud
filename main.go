@@ -238,7 +238,8 @@ func ask(ctx context.Context, client *slack.Client, cfg *config, question, backg
 				return "", err
 			}
 			if reply != nil {
-				return strings.TrimSpace(reply.Text), nil
+				text := client.ResolveMentions(ctx, reply.Text)
+				return strings.TrimSpace(text), nil
 			}
 		}
 

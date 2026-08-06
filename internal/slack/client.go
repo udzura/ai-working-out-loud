@@ -14,9 +14,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
+
+// mentionRE は Slack のユーザーメンション表記 <@U123> / <@U123|label> にマッチする。
+var mentionRE = regexp.MustCompile(`<@([UW][A-Z0-9]+)(?:\|[^>]*)?>`)
 
 const apiBase = "https://slack.com/api"
 
@@ -26,7 +30,9 @@ type Client struct {
 	BotToken   string
 	ChannelID  string
 
-	HTTP *http.Client
+	// BaseURL は Slack Web API のベース URL。通常は空で apiBase を使う（テストで差し替え可能）。
+	BaseURL string
+	HTTP    *http.Client
 }
 
 // New は必要な認証情報から Client を生成する。
@@ -35,6 +41,7 @@ func New(webhookURL, botToken, channelID string) *Client {
 		WebhookURL: webhookURL,
 		BotToken:   botToken,
 		ChannelID:  channelID,
+		BaseURL:    apiBase,
 		HTTP:       &http.Client{Timeout: 30 * time.Second},
 	}
 }
@@ -79,21 +86,33 @@ type apiResponse struct {
 	Messages []Message `json:"messages"`
 }
 
-func (c *Client) getAPI(ctx context.Context, method string, params url.Values) (*apiResponse, error) {
-	u := fmt.Sprintf("%s/%s?%s", apiBase, method, params.Encode())
+// fetch は Bot トークン付きで Slack Web API を GET し、レスポンスを out にデコードする。
+func (c *Client) fetch(ctx context.Context, method string, params url.Values, out any) error {
+	base := c.BaseURL
+	if base == "" {
+		base = apiBase
+	}
+	u := fmt.Sprintf("%s/%s?%s", base, method, params.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.BotToken)
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return fmt.Errorf("%s のレスポンス解析に失敗しました: %w", method, err)
+	}
+	return nil
+}
+
+func (c *Client) getAPI(ctx context.Context, method string, params url.Values) (*apiResponse, error) {
 	var out apiResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("%s のレスポンス解析に失敗しました: %w", method, err)
+	if err := c.fetch(ctx, method, params, &out); err != nil {
+		return nil, err
 	}
 	if !out.OK {
 		return nil, fmt.Errorf("%s が失敗しました: %s", method, out.Error)
@@ -139,4 +158,58 @@ func (c *Client) ReplyFrom(ctx context.Context, threadTS, userID string) (*Messa
 		}
 	}
 	return nil, nil
+}
+
+type userResponse struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
+	User  struct {
+		Name    string `json:"name"`
+		Profile struct {
+			DisplayName string `json:"display_name"`
+			RealName    string `json:"real_name"`
+		} `json:"profile"`
+	} `json:"user"`
+}
+
+// UserDisplayName は users.info で userID の表示名を取得する。
+// display_name > real_name > name の優先順で返す。
+func (c *Client) UserDisplayName(ctx context.Context, userID string) (string, error) {
+	params := url.Values{}
+	params.Set("user", userID)
+	var out userResponse
+	if err := c.fetch(ctx, "users.info", params, &out); err != nil {
+		return "", err
+	}
+	if !out.OK {
+		return "", fmt.Errorf("users.info が失敗しました: %s", out.Error)
+	}
+	if n := out.User.Profile.DisplayName; n != "" {
+		return n, nil
+	}
+	if n := out.User.Profile.RealName; n != "" {
+		return n, nil
+	}
+	return out.User.Name, nil
+}
+
+// ResolveMentions はテキスト中の <@U123> 表記を @表示名 に置換する。
+// これはベストエフォートで、解決に失敗したメンションは元の表記のまま残す。
+// 同一 ID は一度だけ問い合わせてキャッシュする。
+func (c *Client) ResolveMentions(ctx context.Context, text string) string {
+	cache := map[string]string{}
+	return mentionRE.ReplaceAllStringFunc(text, func(match string) string {
+		id := mentionRE.FindStringSubmatch(match)[1]
+		if replaced, ok := cache[id]; ok {
+			return replaced
+		}
+		name, err := c.UserDisplayName(ctx, id)
+		if err != nil || name == "" {
+			cache[id] = match // 解決失敗時は元のまま
+			return match
+		}
+		replaced := "@" + name
+		cache[id] = replaced
+		return replaced
+	})
 }
