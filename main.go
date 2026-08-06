@@ -2,11 +2,14 @@
 //
 // 使い方:
 //
-//	ask-the-boss ask "デプロイを本番に反映してよいですか？"
+//	ask-the-boss ask --question "本番反映してよいですか？" --background "PR #123 のレビューが完了しました"
+//	ask-the-boss ask --question-file q.md --background-file bg.md
 //	echo "長めの質問文" | ask-the-boss ask
 //
-// Incoming Webhook で質問を投稿し、Bot トークンでスレッド返信をポーリングして
-// 上司（SLACK_BOSS_USER_ID）の回答が付くまで待つ。回答は標準出力に出す。
+// 質問内容（--question / --question-file / 位置引数 / 標準入力）と、任意の背景
+// （--background / --background-file）を分けて渡せる。Incoming Webhook で質問を
+// 投稿し、Bot トークンでスレッド返信をポーリングして上司（SLACK_BOSS_USER_ID）の
+// 回答が付くまで待つ。回答内のメンションは表示名に解決し、標準出力に出す。
 package main
 
 import (
