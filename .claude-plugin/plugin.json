@@ -1,0 +1,13 @@
+{
+  "name": "ask-the-boss",
+  "displayName": "Ask the Boss",
+  "description": "作業中に人間（上司）の判断・承認が必要になったとき、Slack 経由で質問して回答を待つスキル。本番反映や破壊的操作の承認などに使う。",
+  "version": "0.1.0",
+  "author": {
+    "name": "udzura"
+  },
+  "homepage": "https://github.com/udzura/ask-the-boss",
+  "repository": "https://github.com/udzura/ask-the-boss",
+  "license": "MIT",
+  "keywords": ["slack", "approval", "human-in-the-loop", "workflow"]
+}

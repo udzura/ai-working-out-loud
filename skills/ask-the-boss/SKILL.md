@@ -25,7 +25,8 @@ Slack 経由でユーザーの上司に質問を投げ、返信が来るまで�
 
 ### 1. 環境変数（4つ）
 
-CLI は以下の環境変数を必要とする。リポジトリ直下に `.env` があれば読み込む。
+CLI は以下の環境変数を必要とする。シェルのプロファイルや direnv、Claude Code の env 設定などで
+あらかじめ設定されている想定。ローカル開発中のみ、リポジトリ直下に `.env` があれば読み込んでよい。
 
 | 変数 | 用途 |
 |---|---|
@@ -36,9 +37,16 @@ CLI は以下の環境変数を必要とする。リポジトリ直下に `.env`
 
 未設定ならユーザーに設定を依頼する（勝手に値を推測しない）。
 
-### 2. バイナリ
+### 2. バイナリ `ask-the-boss`
 
-リポジトリ直下に `ask-the-boss` バイナリが無ければ `go build -o ask-the-boss .` でビルドする。
+次の優先順で用意する:
+
+1. すでに PATH 上にあればそれを使う（`command -v ask-the-boss`）。
+2. 無ければ `go install github.com/udzura/ask-the-boss@latest` で導入する
+   （`$(go env GOPATH)/bin` に入る。PATH に含める）。
+3. プラグインとして導入済みの場合、`${CLAUDE_PLUGIN_ROOT}` に Go ソースがあるので
+   `go build -o "${CLAUDE_PLUGIN_ROOT}/ask-the-boss" "${CLAUDE_PLUGIN_ROOT}"` でビルドしてもよい。
+4. このリポジトリ内で作業しているなら `go build -o ask-the-boss .` でビルドする。
 
 ## 使い方の手順
 
@@ -58,9 +66,10 @@ CLI は以下の環境変数を必要とする。リポジトリ直下に `.env`
 （Bash ツールの実行上限より長く待てる）。`--timeout` は状況に応じて設定する（既定 30m）。
 
 ```bash
-# .env を読み込んでバックグラウンド実行
-set -a; . ./.env; set +a
-./ask-the-boss ask \
+# ローカル開発時のみ、リポジトリ直下に .env があれば読み込む
+[ -f ./.env ] && { set -a; . ./.env; set +a; }
+
+ask-the-boss ask \
   --background "PR #123 のレビューが完了し、CI もグリーンです。本番デプロイの準備が整いました。" \
   --question "この変更を本番に反映してよいですか？（はい／いいえ／保留 でお答えください）" \
   --timeout 30m --interval 15s
