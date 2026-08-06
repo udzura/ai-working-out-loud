@@ -1,3 +1,4 @@
 /ask-the-boss
 *.out
 .env
+/.state-test/
