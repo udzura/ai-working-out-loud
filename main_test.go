@@ -9,7 +9,7 @@ import (
 
 func TestBuildMessage(t *testing.T) {
 	t.Run("背景あり", func(t *testing.T) {
-		got := buildMessage("U123", "本番反映してよいですか？", "PR #123 が承認済みです", "[ask-the-boss:abc]")
+		got := buildMessage("U123", "", "本番反映してよいですか？", "PR #123 が承認済みです", "[ask-the-boss:abc]")
 		for _, want := range []string{"<@U123>", "*【背景】*", "PR #123 が承認済みです", "*【質問】*", "本番反映してよいですか？", "[ask-the-boss:abc]"} {
 			if !strings.Contains(got, want) {
 				t.Errorf("メッセージに %q が含まれていません:\n%s", want, got)
@@ -17,12 +17,24 @@ func TestBuildMessage(t *testing.T) {
 		}
 	})
 	t.Run("背景なしなら背景ブロックを省略", func(t *testing.T) {
-		got := buildMessage("U123", "質問だけ", "", "[m]")
+		got := buildMessage("U123", "", "質問だけ", "", "[m]")
 		if strings.Contains(got, "【背景】") {
 			t.Errorf("背景が空なのに背景ブロックが出ています:\n%s", got)
 		}
 		if !strings.Contains(got, "【質問】") {
 			t.Errorf("質問ブロックがありません:\n%s", got)
+		}
+	})
+	t.Run("質問者名ありなら本文に含む", func(t *testing.T) {
+		got := buildMessage("U123", "田中花子", "質問です", "", "[m]")
+		if !strings.Contains(got, "質問者: 田中花子") {
+			t.Errorf("質問者名が含まれていません:\n%s", got)
+		}
+	})
+	t.Run("質問者名なしなら質問者表記を省略", func(t *testing.T) {
+		got := buildMessage("U123", "", "質問です", "", "[m]")
+		if strings.Contains(got, "質問者") {
+			t.Errorf("質問者名が空なのに質問者表記が出ています:\n%s", got)
 		}
 	})
 }

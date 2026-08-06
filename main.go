@@ -7,9 +7,10 @@
 //	echo "長めの質問文" | ask-the-boss ask
 //
 // 質問内容（--question / --question-file / 位置引数 / 標準入力）と、任意の背景
-// （--background / --background-file）を分けて渡せる。Incoming Webhook で質問を
-// 投稿し、Bot トークンでスレッド返信をポーリングして上司（SLACK_BOSS_USER_ID）の
-// 回答が付くまで待つ。回答内のメンションは表示名に解決し、標準出力に出す。
+// （--background / --background-file）、任意の質問者名（--from）を分けて渡せる。
+// Incoming Webhook で質問を投稿し、Bot トークンでスレッド返信をポーリングして
+// 上司（SLACK_BOSS_USER_ID）の回答が付くまで待つ。回答内のメンションは表示名に
+// 解決し、標準出力に出す。
 package main
 
 import (
@@ -74,11 +75,12 @@ flags:
   --question-file       質問内容をファイルから読み込む
   --background, -b      質問の背景 (インライン, 任意)
   --background-file     質問の背景をファイルから読み込む (任意)
+  --from                質問者の名前 (任意, 受け取った文字列をそのまま表示)
   --timeout             回答待ちの最大時間 (デフォルト 30m)
   --interval            ポーリング間隔 (デフォルト 10s)
 
 質問内容は --question / --question-file / 位置引数 / 標準入力 のいずれかで必須。
-背景は --background / --background-file で任意に指定できる。
+背景は --background / --background-file、質問者名は --from で任意に指定できる。
 
 環境変数:
   SLACK_WEBHOOK_URL   質問の投稿先 Incoming Webhook URL
@@ -116,6 +118,7 @@ func runAsk(args []string) error {
 	fs.StringVar(&background, "background", "", "質問の背景 (インライン, 任意)")
 	fs.StringVar(&background, "b", "", "質問の背景 (インライン, 短縮形)")
 	fs.StringVar(&backgroundFile, "background-file", "", "質問の背景をファイルから読み込む (任意)")
+	from := fs.String("from", "", "質問者の名前 (任意, そのまま表示)")
 	timeout := fs.Duration("timeout", 30*time.Minute, "回答待ちの最大時間")
 	interval := fs.Duration("interval", 10*time.Second, "ポーリング間隔")
 	if err := fs.Parse(args); err != nil {
@@ -141,7 +144,7 @@ func runAsk(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	answer, err := ask(ctx, client, cfg, q, bg, *timeout, *interval)
+	answer, err := ask(ctx, client, cfg, q, bg, strings.TrimSpace(*from), *timeout, *interval)
 	if err != nil {
 		return err
 	}
@@ -190,10 +193,14 @@ func resolveQuestion(inline, file string, args []string) (string, error) {
 }
 
 // buildMessage は Slack に投稿する質問メッセージ本文を組み立てる。
-// background が空なら背景ブロックは省略する。
-func buildMessage(bossUserID, question, background, marker string) string {
+// background が空なら背景ブロックを、from が空なら質問者表記を省略する。
+func buildMessage(bossUserID, from, question, background, marker string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "<@%s> 質問です:\n\n", bossUserID)
+	if from != "" {
+		fmt.Fprintf(&b, "<@%s> 質問です（質問者: %s）:\n\n", bossUserID, from)
+	} else {
+		fmt.Fprintf(&b, "<@%s> 質問です:\n\n", bossUserID)
+	}
 	if background != "" {
 		fmt.Fprintf(&b, "*【背景】*\n%s\n\n", background)
 	}
@@ -210,10 +217,10 @@ func newQuestionID() string {
 }
 
 // ask は質問を投稿し、上司の返信が付くまでポーリングして回答テキストを返す。
-func ask(ctx context.Context, client *slack.Client, cfg *config, question, background string, timeout, interval time.Duration) (string, error) {
+func ask(ctx context.Context, client *slack.Client, cfg *config, question, background, from string, timeout, interval time.Duration) (string, error) {
 	id := newQuestionID()
 	marker := fmt.Sprintf("[ask-the-boss:%s]", id)
-	text := buildMessage(cfg.BossUserID, question, background, marker)
+	text := buildMessage(cfg.BossUserID, from, question, background, marker)
 
 	if err := client.PostWebhook(ctx, text); err != nil {
 		return "", err
