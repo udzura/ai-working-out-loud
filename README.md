@@ -1,4 +1,8 @@
-# ask-the-boss
+# ai-working-out-loud
+
+AI（Claude Code）に「作業しながら声に出す」＝人間とのコミュニケーションを促させるための
+コマンド群と Claude Code スキルを置くリポジトリです。現在収録しているのは `ask-the-boss` 一式で、
+以降の説明はすべてこのコマンドについてのものです。
 
 作業中の AI（Claude Code）が、**人間（上司）の判断・承認が必要になったとき**に、Slack 経由で
 質問を投げて回答を待つためのツールと Claude Code スキルです。本番反映・破壊的操作・費用の発生する
@@ -44,7 +48,7 @@
 ### 3. CLI のインストール
 
 ```bash
-go install github.com/udzura/ask-the-boss@latest
+go install github.com/udzura/ai-working-out-loud/cmd/ask-the-boss@latest
 # $(go env GOPATH)/bin に ask-the-boss が入るので PATH に含める
 ```
 
@@ -53,7 +57,7 @@ go install github.com/udzura/ask-the-boss@latest
 各自の Claude Code で、マーケットプレイスを追加してプラグインをインストールします。
 
 ```
-/plugin marketplace add udzura/ask-the-boss
+/plugin marketplace add udzura/ai-working-out-loud
 /plugin install ask-the-boss@udzura
 ```
 
@@ -108,9 +112,18 @@ ask-the-boss resume <質問ID> --timeout 30m --interval 15s
 
 ## 開発
 
+このリポジトリは複数のコマンドを置く構成で、各コマンドは `cmd/<コマンド名>/` に入っています。
+
+```
+cmd/ask-the-boss/   # ask-the-boss CLI（main パッケージ）
+internal/slack/     # コマンド間で共有する Slack クライアント
+skills/             # Claude Code スキル
+```
+
 ```bash
-go build -o ask-the-boss .   # ビルド
-go test ./...                # テスト
+go build -o ask-the-boss ./cmd/ask-the-boss   # ビルド
+go build ./...                                # 全コマンドのビルド確認
+go test ./...                                 # テスト
 ```
 
 ## ライセンス

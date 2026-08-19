@@ -54,11 +54,12 @@ CLI は以下の環境変数を必要とする。シェルのプロファイル�
 次の優先順で用意する:
 
 1. すでに PATH 上にあればそれを使う（`command -v ask-the-boss`）。
-2. 無ければ `go install github.com/udzura/ask-the-boss@latest` で導入する
+2. 無ければ `go install github.com/udzura/ai-working-out-loud/cmd/ask-the-boss@latest` で導入する
    （`$(go env GOPATH)/bin` に入る。PATH に含める）。
 3. プラグインとして導入済みの場合、`${CLAUDE_PLUGIN_ROOT}` に Go ソースがあるので
-   `go build -o "${CLAUDE_PLUGIN_ROOT}/ask-the-boss" "${CLAUDE_PLUGIN_ROOT}"` でビルドしてもよい。
-4. このリポジトリ内で作業しているなら `go build -o ask-the-boss .` でビルドする。
+   `go build -o "${CLAUDE_PLUGIN_ROOT}/ask-the-boss" "${CLAUDE_PLUGIN_ROOT}/cmd/ask-the-boss"`
+   でビルドしてもよい。
+4. このリポジトリ内で作業しているなら `go build -o ask-the-boss ./cmd/ask-the-boss` でビルドする。
 
 ## 使い方の手順
 

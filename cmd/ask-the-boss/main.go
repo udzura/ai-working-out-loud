@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/udzura/ask-the-boss/internal/slack"
+	"github.com/udzura/ai-working-out-loud/internal/slack"
 )
 
 // config は環境変数から読み込む設定。

@@ -6,8 +6,8 @@
   "author": {
     "name": "udzura"
   },
-  "homepage": "https://github.com/udzura/ask-the-boss",
-  "repository": "https://github.com/udzura/ask-the-boss",
+  "homepage": "https://github.com/udzura/ai-working-out-loud",
+  "repository": "https://github.com/udzura/ai-working-out-loud",
   "license": "MIT",
   "keywords": ["slack", "approval", "human-in-the-loop", "workflow"]
 }
