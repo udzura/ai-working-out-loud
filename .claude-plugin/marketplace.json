@@ -7,10 +7,10 @@
   "description": "udzura の Claude Code プラグイン置き場",
   "plugins": [
     {
-      "name": "ask-the-boss",
+      "name": "ai-working-out-loud",
       "source": "./",
-      "description": "Slack 経由で上司に質問し、承認・判断を得るためのスキル",
-      "version": "0.1.0"
+      "description": "上司への確認（ask-the-boss）と作業まとめの定期共有（wol-slack）を Slack 経由で行うスキル集",
+      "version": "0.2.0"
     }
   ]
 }

@@ -1,13 +1,13 @@
 {
-  "name": "ask-the-boss",
-  "displayName": "Ask the Boss",
-  "description": "作業中に人間（上司）の判断・承認が必要になったとき、Slack 経由で質問して回答を待つスキル。本番反映や破壊的操作の承認などに使う。",
-  "version": "0.1.0",
+  "name": "ai-working-out-loud",
+  "displayName": "AI Working Out Loud",
+  "description": "作業中の AI に人間とのコミュニケーションを促させるスキル集。人間（上司）の判断・承認が必要なときに Slack で確認する ask-the-boss と、作業まとめを定期的に Slack へ共有する wol-slack を同梱。",
+  "version": "0.2.0",
   "author": {
     "name": "udzura"
   },
   "homepage": "https://github.com/udzura/ai-working-out-loud",
   "repository": "https://github.com/udzura/ai-working-out-loud",
   "license": "MIT",
-  "keywords": ["slack", "approval", "human-in-the-loop", "workflow"]
+  "keywords": ["slack", "approval", "human-in-the-loop", "working-out-loud", "workflow"]
 }

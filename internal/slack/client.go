@@ -1,4 +1,6 @@
-// Package slack は ask-the-boss が使う最小限の Slack 連携を提供する。
+// Package slack はこのリポジトリの各コマンドが使う最小限の Slack 連携を提供する。
+// 投稿するだけのコマンド（wol-slack）は PostWebhook のみを使い、BotToken /
+// ChannelID は空でよい。
 //
 // 投稿は Incoming Webhook 経由、返信の読み取りは Bot トークンの
 // conversations.history / conversations.replies 経由という二系統構成になっている。
