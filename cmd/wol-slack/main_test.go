@@ -3,35 +3,8 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
-
-func TestBuildMessage(t *testing.T) {
-	t.Run("見出しと投稿者あり", func(t *testing.T) {
-		got := buildMessage("パフォーマンス調査", "田中花子", "N+1 を 3 箇所見つけました")
-		for _, want := range []string{"*📝 作業まとめ: パフォーマンス調査*", "_by 田中花子_", "N+1 を 3 箇所見つけました"} {
-			if !strings.Contains(got, want) {
-				t.Errorf("メッセージに %q が含まれていません:\n%s", want, got)
-			}
-		}
-	})
-	t.Run("見出しなしなら既定の見出しのみ", func(t *testing.T) {
-		got := buildMessage("", "", "まとめ本文")
-		if !strings.HasPrefix(got, "*📝 作業まとめ*\n") {
-			t.Errorf("既定の見出しになっていません:\n%s", got)
-		}
-		if strings.Contains(got, ":") {
-			t.Errorf("見出しが空なのにコロンが出ています:\n%s", got)
-		}
-	})
-	t.Run("投稿者なしなら投稿者表記を省略", func(t *testing.T) {
-		got := buildMessage("題名", "", "まとめ本文")
-		if strings.Contains(got, "_by") {
-			t.Errorf("投稿者名が空なのに投稿者表記が出ています:\n%s", got)
-		}
-	})
-}
 
 func TestResolveText(t *testing.T) {
 	dir := t.TempDir()

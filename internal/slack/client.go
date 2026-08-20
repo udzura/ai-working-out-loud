@@ -61,7 +61,13 @@ type Message struct {
 // PostWebhook は Incoming Webhook にテキストを投稿する。
 // Webhook はメッセージの ts を返さないため戻り値は error のみ。
 func (c *Client) PostWebhook(ctx context.Context, text string) error {
-	body, err := json.Marshal(map[string]string{"text": text})
+	return c.PostWebhookPayload(ctx, map[string]string{"text": text})
+}
+
+// PostWebhookPayload は Incoming Webhook に任意のペイロードを投稿する。
+// blocks 付きのメッセージ（rich_text など）を送りたい場合に使う。
+func (c *Client) PostWebhookPayload(ctx context.Context, payload any) error {
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}

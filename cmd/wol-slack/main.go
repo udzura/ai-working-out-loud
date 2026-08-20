@@ -7,12 +7,15 @@
 //	echo "長めのまとめ" | wol-slack
 //
 // Incoming Webhook で投稿するだけの一方向のコマンドで、返信は待たない。
+// Slack の mrkdwn にはリスト記法が無いため、本文は rich_text ブロックに変換して送る
+// （対応する記法は richtext.go 冒頭のコメントを参照）。
 // 必要な環境変数は Webhook URL のみ（WOL_SLACK_WEBHOOK_URL があればそれを使い、
 // 無ければ SLACK_WEBHOOK_URL を使う）。
 package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -37,7 +40,7 @@ flags:
   --summary-file    まとめ本文をファイルから読み込む
   --title, -t       見出し (任意)
   --from            投稿者の名前 (任意, 受け取った文字列をそのまま表示)
-  --dry-run         投稿せず、組み立てた本文を標準出力に表示して終了
+  --dry-run         投稿せず、送信する JSON (blocks) を標準出力に表示して終了
 
 まとめ本文は --summary / --summary-file / 位置引数 / 標準入力 のいずれかで必須。
 投稿するだけで返信は待たない（投稿に成功すると正常終了する）。
@@ -70,7 +73,7 @@ func run(args []string) error {
 	fs.StringVar(&title, "title", "", "見出し (任意)")
 	fs.StringVar(&title, "t", "", "見出し (任意, 短縮形)")
 	from := fs.String("from", "", "投稿者の名前 (任意, そのまま表示)")
-	dryRun := fs.Bool("dry-run", false, "投稿せず本文を標準出力に表示して終了")
+	dryRun := fs.Bool("dry-run", false, "投稿せず送信する JSON を標準出力に表示して終了")
 	if err := fs.Parse(args); err != nil {
 		// -h / --help がフラグの後ろに来た場合もここに入る（正常終了させる）。
 		if errors.Is(err, flag.ErrHelp) {
@@ -85,10 +88,14 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	text := buildMessage(strings.TrimSpace(title), strings.TrimSpace(*from), body)
+	msg := buildPayload(strings.TrimSpace(title), strings.TrimSpace(*from), body)
 
 	if *dryRun {
-		fmt.Println(text)
+		out, err := json.MarshalIndent(msg, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
 		return nil
 	}
 
@@ -101,7 +108,7 @@ func run(args []string) error {
 	defer stop()
 
 	client := slack.New(hookURL, "", "")
-	if err := client.PostWebhook(ctx, text); err != nil {
+	if err := client.PostWebhookPayload(ctx, msg); err != nil {
 		return err
 	}
 	fmt.Fprintln(os.Stderr, "作業まとめを投稿しました")
@@ -157,20 +164,4 @@ func resolveSummary(inline, file string, args []string) (string, error) {
 		return s, nil
 	}
 	return "", errors.New("まとめ本文が空です。--summary / --summary-file / 位置引数 / 標準入力 のいずれかで渡してください")
-}
-
-// buildMessage は Slack に投稿する作業まとめの本文を組み立てる。
-// title が空なら見出しは既定文言のみ、from が空なら投稿者表記を省略する。
-func buildMessage(title, from, summary string) string {
-	var b strings.Builder
-	if title != "" {
-		fmt.Fprintf(&b, "*📝 作業まとめ: %s*\n", title)
-	} else {
-		b.WriteString("*📝 作業まとめ*\n")
-	}
-	if from != "" {
-		fmt.Fprintf(&b, "_by %s_\n", from)
-	}
-	fmt.Fprintf(&b, "\n%s", summary)
-	return b.String()
 }
