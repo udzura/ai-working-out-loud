@@ -92,6 +92,23 @@ func TestResolveSummary(t *testing.T) {
 	})
 }
 
+func TestRunHelp(t *testing.T) {
+	// --help / -h / help は投稿せず正常終了する（環境変数が無くてもエラーにしない）。
+	t.Setenv("WOL_SLACK_WEBHOOK_URL", "")
+	t.Setenv("SLACK_WEBHOOK_URL", "")
+	for _, arg := range []string{"--help", "-h", "help"} {
+		if err := run([]string{arg}); err != nil {
+			t.Errorf("run(%q) = %v, want nil", arg, err)
+		}
+	}
+}
+
+func TestRunUnknownFlag(t *testing.T) {
+	if err := run([]string{"--nope"}); err == nil {
+		t.Error("未知のフラグでエラーを期待しましたが nil でした")
+	}
+}
+
 func TestWebhookURL(t *testing.T) {
 	t.Run("WOL_SLACK_WEBHOOK_URL を優先", func(t *testing.T) {
 		t.Setenv("WOL_SLACK_WEBHOOK_URL", "https://hooks.example.com/wol")

@@ -55,8 +55,14 @@ func main() {
 }
 
 func run(args []string) error {
+	// help は正常終了として扱いたいので、標準出力に出して終わる。
+	if len(args) > 0 && (args[0] == "help" || args[0] == "-h" || args[0] == "--help") {
+		fmt.Print(usage)
+		return nil
+	}
+
 	fs := flag.NewFlagSet("wol-slack", flag.ContinueOnError)
-	fs.Usage = func() { fmt.Fprint(os.Stderr, usage) }
+	fs.Usage = func() {} // usage の出し分けは自前で行う
 	var summary, summaryFile, title string
 	fs.StringVar(&summary, "summary", "", "まとめ本文 (インライン)")
 	fs.StringVar(&summary, "s", "", "まとめ本文 (インライン, 短縮形)")
@@ -66,6 +72,12 @@ func run(args []string) error {
 	from := fs.String("from", "", "投稿者の名前 (任意, そのまま表示)")
 	dryRun := fs.Bool("dry-run", false, "投稿せず本文を標準出力に表示して終了")
 	if err := fs.Parse(args); err != nil {
+		// -h / --help がフラグの後ろに来た場合もここに入る（正常終了させる）。
+		if errors.Is(err, flag.ErrHelp) {
+			fmt.Print(usage)
+			return nil
+		}
+		fmt.Fprint(os.Stderr, usage)
 		return err
 	}
 
