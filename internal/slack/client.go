@@ -1,4 +1,6 @@
-// Package slack は ask-the-boss が使う最小限の Slack 連携を提供する。
+// Package slack はこのリポジトリの各コマンドが使う最小限の Slack 連携を提供する。
+// 投稿するだけのコマンド（wol-slack）は PostWebhook のみを使い、BotToken /
+// ChannelID は空でよい。
 //
 // 投稿は Incoming Webhook 経由、返信の読み取りは Bot トークンの
 // conversations.history / conversations.replies 経由という二系統構成になっている。
@@ -59,7 +61,13 @@ type Message struct {
 // PostWebhook は Incoming Webhook にテキストを投稿する。
 // Webhook はメッセージの ts を返さないため戻り値は error のみ。
 func (c *Client) PostWebhook(ctx context.Context, text string) error {
-	body, err := json.Marshal(map[string]string{"text": text})
+	return c.PostWebhookPayload(ctx, map[string]string{"text": text})
+}
+
+// PostWebhookPayload は Incoming Webhook に任意のペイロードを投稿する。
+// blocks 付きのメッセージ（rich_text など）を送りたい場合に使う。
+func (c *Client) PostWebhookPayload(ctx context.Context, payload any) error {
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
